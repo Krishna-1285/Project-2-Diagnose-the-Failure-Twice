@@ -1,0 +1,24 @@
+# Captured process table from a misbehaving Linux host
+
+# Command:
+
+# ps -eo pid,stat,pcpu,pmem,rss,comm --sort=-rss | head
+
+PID    STAT   %CPU   %MEM      RSS      COMMAND
+
+8423     R     98.7   79.4   15994208   ollama
+1190     S      0.6    3.1     624800   postgres
+2044     S      0.3    1.8     361040   python3
+771      S      0.1    0.9     181220   node
+1455     D      0.0    0.7     140112   rsync
+640      S      0.0    0.4      88004   systemd-journald
+512      S      0.0    0.2      41980   sshd
+3301     Z      0.0    0.0          0   backup-helper
+498      S      0.0    0.1      22310   cron
+1        S      0.0    0.1      12044   systemd
+
+Notes
+
+• PID 8423 (ollama) consumes nearly 16 GB of RAM.
+• rsync is in D state (I/O wait).
+• backup-helper is a zombie process (Z).

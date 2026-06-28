@@ -1,0 +1,18 @@
+Jun 19 02:28:40 relief-gpu systemd[1]: Starting Daily apt upgrade and clean activities...
+Jun 19 02:29:05 relief-gpu model-server[8423]: INFO loaded model weights: deepseek-7b (fp16) in 11.3s
+Jun 19 02:29:05 relief-gpu model-server[8423]: WARN KV cache pre-allocated for context=32768, batch=4
+Jun 19 02:29:06 relief-gpu model-server[8423]: INFO serving on 127.0.0.1:11434
+Jun 19 02:30:48 relief-gpu kernel: nvme0n1: I/O timeout, retrying (attempt 1/3)
+Jun 19 02:30:49 relief-gpu kernel: nvme0n1: I/O retry succeeded
+Jun 19 02:31:09 relief-gpu kernel: ollama invoked oom-killer: gfp_mask=0x140cca, order=0
+Jun 19 02:31:09 relief-gpu kernel: Out of memory: Killed process 8423 (ollama) total-vm:18402112kB, anon-rss:15994208kB
+Jun 19 02:31:10 relief-gpu kernel: oom_reaper: reaped process 8423 (ollama)
+Jun 19 02:31:12 relief-gpu systemd[1]: model-server.service: Main process exited, code=killed, status=9/KILL
+Jun 19 02:31:17 relief-gpu systemd[1]: model-server.service: Scheduled restart job, restart counter at 1.
+Jun 19 02:31:18 relief-gpu model-server[8590]: INFO loaded model weights: deepseek-7b (fp16)
+Jun 19 02:31:31 relief-gpu kernel: Out of memory: Killed process 8590 (ollama)
+Jun 19 02:31:33 relief-gpu systemd[1]: model-server.service: Failed with result 'signal'.
+
+Verified Root Cause
+
+The FP16 DeepSeek-7B model together with a large KV cache exceeded available physical memory, causing the Linux OOM killer to terminate the Ollama process repeatedly and creating a crash loop.

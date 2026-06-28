@@ -1,0 +1,39 @@
+CAPTURE A
+
+avg-cpu:
+%user 91.40
+%system 6.10
+%iowait 0.30
+%idle 2.20
+
+Device
+nvme0n1
+
+%util 1.10
+await 0.40
+
+Result
+
+CPU-bound workload.
+
+---
+
+CAPTURE B
+
+avg-cpu
+
+%user 4.10
+%system 3.20
+%iowait 78.60
+%idle 14.10
+
+Device
+nvme0n1
+
+%util 99.40
+await 142.30
+
+Result
+
+Storage I/O bottleneck.
+High iowait together with nearly 100% disk utilization indicates an I/O-bound system.
