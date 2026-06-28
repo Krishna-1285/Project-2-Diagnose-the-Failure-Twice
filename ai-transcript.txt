@@ -1,0 +1,124 @@
+Project 2 – Diagnose the Failure Twice
+AI Diagnosis Transcript
+
+Student: Gokul Krishna Nandha Sai Kolli
+
+Course:
+System Administration and Maintenance
+
+Chapter:
+Chapter 2 – The Machine Underneath: Operating System Architecture
+
+Date: 26-06-2026
+
+===========================================================
+PROMPT PROVIDED TO THE AI
+===========================================================
+
+You are assisting with Linux incident triage.
+
+Below are the raw process table, kernel log, and service log from a production Linux server.
+
+Your task is to:
+
+1. Identify the SINGLE most likely root cause.
+2. Quote the EXACT log line(s) supporting your conclusion.
+3. State your confidence level.
+4. Identify one reasonable alternative explanation and explain why it is less likely.
+5. Recommend a remediation.
+6. Do not speculate beyond the supplied evidence.
+7. If evidence is insufficient, explicitly state so.
+
+===========================================================
+AI RESPONSE
+===========================================================
+
+Root Cause
+
+The Linux kernel terminated the Ollama model server because the system ran out of available physical memory. This is an Out-of-Memory (OOM) event affecting the memory subsystem.
+
+Supporting Evidence
+
+"Out of memory: Killed process 8423 (ollama) total-vm:18402112kB, anon-rss:15994208kB, file-rss:0kB, shmem-rss:0kB"
+
+"model-server.service: Main process exited, code=killed, status=9/KILL"
+
+Reasoning
+
+The kernel explicitly reports that process 8423 (ollama) was selected by the OOM killer. The process was consuming approximately 15.9 GB of anonymous resident memory (anon-rss), indicating severe memory pressure. The subsequent systemd messages confirm that the service terminated because the kernel killed the process rather than because of an application error.
+
+Confidence
+
+Very High (98%)
+
+Alternative Explanation Considered
+
+The earlier NVMe timeout messages could indicate a storage problem.
+
+Why It Was Rejected
+
+The storage timeout recovered successfully, and no subsequent storage failure was recorded. The kernel later explicitly identifies an Out-of-Memory event, making memory exhaustion the verified root cause.
+
+Recommended Remediation
+
+• Deploy a smaller quantized model (Q4_K_M or INT4).
+• Reduce context length or batch size.
+• Increase available RAM if larger models are required.
+• Configure MemoryMax within the systemd service.
+• Continue monitoring RSS growth to distinguish workload sizing from a genuine memory leak.
+
+===========================================================
+HUMAN VERIFICATION
+===========================================================
+
+The quoted OOM log line exactly matches the supplied evidence.
+
+The kernel explicitly identifies PID 8423 as the terminated process.
+
+The AI correctly classified the failure as a memory subsystem problem.
+
+The recommended remediation addresses the root cause rather than merely restarting the service.
+
+No fabricated log lines were identified.
+
+===========================================================
+AI FAILURE ANALYSIS
+===========================================================
+
+Observed Failure Modes
+
+Hallucinated Cause:
+None observed.
+
+Misread Log Line:
+None observed.
+
+Fabricated Evidence:
+None observed.
+
+Unsafe or Destructive Recommendation:
+None observed.
+
+Overall Assessment
+
+The AI accurately interpreted the supplied evidence. Human verification was still required to ensure that every quoted log entry existed in the original evidence and that the remediation addressed the underlying memory-sizing problem instead of treating only the symptom.
+
+===========================================================
+MODEL INFORMATION
+===========================================================
+
+Model Used:
+ChatGPT GPT-5.5
+
+Purpose:
+Incident analysis and comparison with manual diagnosis.
+
+Role of AI:
+Evidence interpretation only.
+
+Final Authority:
+Human administrator.
+
+Signed:
+
+Gokul Krishna Nandha Sai Kolli

@@ -1,0 +1,165 @@
+Project 2 – Memory Sizing Analysis
+
+Student Name: Gokul Krishna Nandha Sai Kolli
+
+Course:
+System Administration and Maintenance
+
+Chapter:
+Chapter 2 – The Machine Underneath: Operating System Architecture
+
+Incident:
+Out-of-Memory (OOM) Termination of Ollama Model Server
+
+------------------------------------------------------------
+Introduction
+------------------------------------------------------------
+
+The purpose of this sizing analysis is to explain why the Linux Out-of-Memory (OOM) killer terminated the Ollama model server. Rather than simply stating that the application crashed, this analysis converts the kernel log evidence into measurable memory requirements using the provided memory sizing worksheet (vram_sizer.py). The objective is to determine whether the deployed model could realistically fit into the available hardware resources and to recommend a configuration that would prevent the failure.
+
+The supplied kernel log reports that the Ollama process consumed approximately 15.99 GB of anonymous resident memory (anon-rss) before the Linux kernel invoked the OOM killer. This strongly suggests that an FP16 DeepSeek-7B model was loaded together with a large key-value (KV) cache. Since the available system memory was insufficient, the operating system protected itself by terminating the largest memory-consuming process. This analysis explains that failure using memory calculations rather than assumptions. 
+
+------------------------------------------------------------
+Memory Requirement Calculations
+------------------------------------------------------------
+
+The Chapter 2 sizing guidelines estimate model memory requirements using the following approximation:
+
+Memory Required = Model Weights + KV Cache + Framework Overhead
+
+The supplied worksheet (vram_sizer.py) uses approximately 18% framework overhead and estimates KV cache growth based on context length and batch size. :contentReference[oaicite:1]{index=1}
+
+Estimated Model Weight Memory
+
+FP16 (2 bytes per parameter)
+
+7 Billion Parameters
+
+≈ 14–16 GB
+
+INT8 (1 byte per parameter)
+
+≈ 7–8 GB
+
+INT4 / Q4_K_M
+
+≈ 4–5 GB
+
+These values closely match the guidance provided in Chapter 2 and explain why FP16 models require substantially more memory than quantized models. Quantization reduces the number of bytes required to store each model weight while maintaining acceptable inference quality for many workloads. :contentReference[oaicite:2]{index=2}
+
+------------------------------------------------------------
+KV Cache Analysis
+------------------------------------------------------------
+
+The supplied incident log indicates that the model server pre-allocated a KV cache using:
+
+Context Length = 32,768 Tokens
+
+Batch Size = 4
+
+A larger context length dramatically increases memory consumption because the KV cache grows with every additional token retained during inference. Even when the model weights themselves fit into memory, the KV cache may exceed several additional gigabytes during long-context workloads. This explains why deployments that appear to fit on paper may still trigger Out-of-Memory events under production workloads. 
+
+------------------------------------------------------------
+Framework Overhead
+------------------------------------------------------------
+
+In addition to model weights and KV cache, inference engines require memory for activations, runtime buffers, tensor management, and framework operations. Chapter 2 recommends budgeting approximately 15–20% additional overhead beyond the calculated model memory.
+
+Using an 18% overhead estimate:
+
+FP16 Model
+≈15 GB
+
+Framework Overhead
+≈2.7 GB
+
+Total Estimated Memory
+≈17.7–18.0 GB
+
+This estimated total exceeds the physical memory available on a typical 16 GB workstation and explains why the Linux kernel terminated the process. 
+
+------------------------------------------------------------
+Relationship to the Kernel Log
+------------------------------------------------------------
+
+The kernel recorded the following evidence during the incident:
+
+"Out of memory: Killed process 8423 (ollama) total-vm:18402112kB, anon-rss:15994208kB..."
+
+The anon-rss value corresponds to approximately 15.99 GB of resident memory. This aligns closely with the expected memory requirements of an FP16 DeepSeek-7B model before additional framework overhead and KV cache growth are considered. Consequently, the kernel log and the sizing worksheet independently support the same conclusion: the deployed workload exceeded the memory capacity of the host system. :contentReference[oaicite:5]{index=5}
+
+------------------------------------------------------------
+Recommended Deployment Configuration
+------------------------------------------------------------
+
+Based on the sizing calculations, the following deployment options are recommended.
+
+Preferred Quantization
+
+Q4_K_M (INT4)
+
+Estimated Weight Memory
+
+Approximately 4–5 GB
+
+Estimated Total Memory Including Overhead
+
+Approximately 6–7 GB
+
+Recommended Context Length
+
+4K–8K Tokens
+
+Suitable Hardware
+
+16 GB System RAM
+
+or
+
+16 GB GPU
+
+For larger context windows (32K) or higher batch sizes, at least a 24 GB or 48 GB GPU is recommended to provide sufficient memory for the expanding KV cache while maintaining stable inference performance. :contentReference[oaicite:6]{index=6}
+
+------------------------------------------------------------
+Worksheet Summary
+------------------------------------------------------------
+
+Memory Configuration Comparison
+
+FP16
+Weights:
+14–16 GB
+
+Estimated Total:
+17–18 GB
+
+Fits 16 GB System:
+No
+
+INT8
+Weights:
+7–8 GB
+
+Estimated Total:
+9–10 GB
+
+Fits 16 GB System:
+Yes
+
+INT4 / Q4_K_M
+Weights:
+4–5 GB
+
+Estimated Total:
+6–7 GB
+
+Fits 16 GB System:
+Yes
+
+------------------------------------------------------------
+Conclusion
+------------------------------------------------------------
+
+The sizing analysis confirms that the Out-of-Memory event resulted from insufficient available memory rather than an application defect. The memory consumed by the FP16 DeepSeek-7B model, combined with the large pre-allocated KV cache and framework overhead, exceeded the capacity of the host system. The Linux kernel therefore invoked the OOM killer and terminated the Ollama process to preserve overall system stability.
+
+Deploying a Q4_K_M quantized model, reducing the context length or batch size, and configuring appropriate memory limits would prevent this failure from recurring. This analysis demonstrates that performing workload sizing before deployment is an essential systems administration practice because it allows administrators to identify resource limitations before they become production outages. 
